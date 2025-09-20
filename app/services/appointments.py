@@ -57,13 +57,9 @@ class AppointmentManager:
         if hold.slot_id != payload.slot_id:
             raise ValueError("Selected slot does not match hold")
 
-        attendees = []
-        if payload.caller_name:
-            attendees.append({"displayName": payload.caller_name})
-        if payload.caller_phone:
-            attendees.append({"comment": f"Phone: {payload.caller_phone}"})
-
-        event = self.calendar_service.confirm_event(hold_id=payload.hold_id, attendees=attendees or None)
+        # Google Calendar requires attendee entries to include email addresses; since we
+        # only capture name/phone, omit attendees entirely to avoid API errors.
+        event = self.calendar_service.confirm_event(hold_id=payload.hold_id, attendees=None)
         self.hold_service.set_status(hold_id=payload.hold_id, status="confirmed")
 
         previous_appointment_id = payload.previous_appointment_id or hold.previous_appointment_id
