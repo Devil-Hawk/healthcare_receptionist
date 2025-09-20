@@ -25,6 +25,7 @@ class AppConfig(BaseSettings):
     google_auth_method: str = Field(default="service_account", alias="GOOGLE_AUTH_METHOD")
     google_oauth_client_secrets_path: Path | None = Field(default=None, alias="GOOGLE_OAUTH_CLIENT_SECRETS_PATH")
     google_oauth_token_path: Path | None = Field(default=None, alias="GOOGLE_OAUTH_TOKEN_PATH")
+    google_oauth_token_json: str | None = Field(default=None, alias="GOOGLE_OAUTH_TOKEN_JSON")
 
     database_url: str = Field(default="sqlite:///./data/crm.db", alias="DATABASE_URL")
 
