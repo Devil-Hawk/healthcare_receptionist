@@ -1,0 +1,27 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment & secrets
+.env
+*.env
+service-account.json
+oauth_client_secrets.json
+oauth_token.json
+
+# SQLite databases / local data
+*.db
+*.sqlite3
+data/
+
+# IDE/editor artifacts
+.vscode/
+.idea/
+*.swp
+.DS_Store
