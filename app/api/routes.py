@@ -90,11 +90,11 @@ async def retell_tools(
     crm_service = CRMService(session=session)
     hold_service = HoldService(session=session)
     appt = AppointmentManager(
-    calendar_service=calendar_service,
-    crm_service=crm_service,
-    hold_service=hold_service,
-    session=session,
-)
+        calendar_service=calendar_service,
+        crm_service=crm_service,
+        hold_service=hold_service,
+        session=session,
+    )
 
     try:
         if request.tool_name == "manage_appointment":
@@ -142,3 +142,8 @@ async def retell_tools(
     except Exception as exc:  # noqa: BLE001
         logger.exception("Unhandled error for tool {tool}", tool=request.tool_name)
         return JSONResponse(status_code=500, content={"status": "error", "message": str(exc)})
+
+
+@router.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
