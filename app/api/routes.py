@@ -37,33 +37,44 @@ def _authorize(token: str | None) -> None:
     if expected and token != expected:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid webhook token")
 
-def _normalize(d: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Return {tool_name, arguments} from many possible Retell envelopes."""
+def _normalize(d: dict) -> dict | None:
+    """
+    Ensure Retell payload always becomes:
+    {
+      "tool_name": "manage_appointment",
+      "arguments": {...}
+    }
+    """
     if not isinstance(d, dict):
         return None
-    # already correct
+
+    # ✅ Already correct
     if "tool_name" in d and "arguments" in d:
         return {"tool_name": d["tool_name"], "arguments": d["arguments"]}
-    # flat {name, args/arguments}
+
+    # ✅ Retell style: {name, args}
     if "name" in d and ("args" in d or "arguments" in d):
         args = d.get("arguments") or d.get("args") or {}
-        tool = RETELL_NAME_TO_TOOL.get(d["name"], d["name"])
-        return {"tool_name": tool, "arguments": args}
-    # raw args (infer)
+        mapped_tool = RETELL_NAME_TO_TOOL.get(d["name"], d["name"])
+        return {"tool_name": mapped_tool, "arguments": args}
+
+    # ✅ Raw arguments without wrapper
     if {"action_type", "caller_name"} <= set(d.keys()):
         return {"tool_name": "manage_appointment", "arguments": d}
-    # deep search
-    for v in d.values():
-        if isinstance(v, dict):
-            out = _normalize(v)
-            if out:
-                return out
-        elif isinstance(v, list):
-            for item in v:
+
+    # ✅ Deep search inside nested objects
+    for value in d.values():
+        if isinstance(value, dict):
+            result = _normalize(value)
+            if result:
+                return result
+        elif isinstance(value, list):
+            for item in value:
                 if isinstance(item, dict):
-                    out = _normalize(item)
-                    if out:
-                        return out
+                    result = _normalize(item)
+                    if result:
+                        return result
+
     return None
 
 @router.post("/retell/tools")
