@@ -43,57 +43,43 @@ def _coerce_strings(d: dict) -> dict:
         out[k] = v.strip() if isinstance(v, str) else v
     return out
 
-def _normalize(body: dict[str, Any]) -> dict[str, Any] | None:
-    """
-    Normalize incoming payload to:
-    { "tool_name": "<tool>", "arguments": {...} }
-
-    Accepts:
-    - {tool_name, arguments}
-    - {name, args} or {name, arguments}
-    - raw args like:
-        * {hold_id, slot_id, ...}   -> confirm_booking
-        * {action_type, caller_name, ...} -> manage_appointment
-        * {caller_name, date_range?} -> manage_appointment (defaults action_type=book)
-    - nested dicts/lists
-    """
-    if not isinstance(body, dict):
+def _normalize(d: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    if not isinstance(d, dict):
         return None
 
-    # 1) Already wrapped
-    if "tool_name" in body and "arguments" in body:
-        return {"tool_name": str(body["tool_name"]), "arguments": _coerce_strings(body.get("arguments") or {})}
+    # Already correct wrapper
+    if "tool_name" in d and "arguments" in d:
+        return {"tool_name": d["tool_name"], "arguments": d["arguments"]}
 
-    # 2) Alternate envelope
-    if "name" in body and ("args" in body or "arguments" in body):
-        tool = RETELL_NAME_TO_TOOL.get(str(body["name"]), str(body["name"]))
-        args = body.get("arguments") or body.get("args") or {}
-        return {"tool_name": tool, "arguments": _coerce_strings(args)}
+    # Retell flat style {name, args/arguments}
+    if "name" in d and ("args" in d or "arguments" in d):
+        args = d.get("arguments") or d.get("args") or {}
+        tool = RETELL_NAME_TO_TOOL.get(d["name"], d["name"])
+        return {"tool_name": tool, "arguments": args}
 
-    # 3) Raw args — infer tool
-    if "hold_id" in body or "slot_id" in body:
-        # Confirm booking
-        return {"tool_name": "confirm_booking", "arguments": _coerce_strings(body)}
+    # >>> ADD THESE TWO INFERENCE BRANCHES <<<
+    # Args-only CONFIRM (Retell sometimes sends this)
+    if {"hold_id", "slot_id"} <= set(d.keys()):
+        return {"tool_name": "confirm_booking", "arguments": d}
 
-    if "action_type" in body or "caller_name" in body or "date_range" in body:
-        # Manage appointment (default to book)
-        args = _coerce_strings(body)
-        args.setdefault("action_type", "book")
-        return {"tool_name": "manage_appointment", "arguments": args}
+    # Args-only MANAGE (book/reschedule/cancel)
+    if {"action_type", "caller_name"} <= set(d.keys()):
+        return {"tool_name": "manage_appointment", "arguments": d}
 
-    # 4) Deep search
-    for v in body.values():
+    # Deep search (keep as-is)
+    for v in d.values():
         if isinstance(v, dict):
-            norm = _normalize(v)
-            if norm:
-                return norm
+            out = _normalize(v)
+            if out:
+                return out
         elif isinstance(v, list):
             for item in v:
                 if isinstance(item, dict):
-                    norm = _normalize(item)
-                    if norm:
-                        return norm
+                    out = _normalize(item)
+                    if out:
+                        return out
     return None
+
 
 
 @router.post("/retell/tools")
