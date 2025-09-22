@@ -29,6 +29,7 @@ RETELL_NAME_TO_TOOL = {
     "Lookup-Patient": "lookup_patient",
     "Send-Message": "send_message",
     "Route-Live": "route_live",
+    "Cancel-appointment": "cancel_or_reschedule",
     # You can add more aliases here if needed
 }
 
@@ -95,6 +96,14 @@ def _normalize(d: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     # 4) args-only for confirm_booking
     if {"hold_id", "slot_id"} <= set(d.keys()):
         return {"tool_name": "confirm_booking", "arguments": d}
+    
+    # 4b) args-only for cancel (just appointment_id)
+    if set(d.keys()) == {"appointment_id"}:
+        # map to cancel_or_reschedule and inject action_type here
+        return {"tool_name": "cancel_or_reschedule", "arguments": {
+            "action_type": "cancel",
+            **d
+        }}
 
     # 5) deep search inside any nested dict/list
     for v in d.values():
