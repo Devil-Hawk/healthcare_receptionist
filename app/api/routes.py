@@ -30,6 +30,7 @@ RETELL_NAME_TO_TOOL = {
     "Send-Message": "send_message",
     "Route-Live": "route_live",
     "Cancel-appointment": "cancel_or_reschedule",
+    "Cancel-Appointment": "cancel_or_reschedule"
     # You can add more aliases here if needed
 }
 
