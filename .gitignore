@@ -14,6 +14,8 @@ env/
 service-account.json
 oauth_client_secrets.json
 oauth_token.json
+# python backup files
+routes_backup.py
 
 # SQLite databases / local data
 *.db
