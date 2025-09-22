@@ -46,27 +46,21 @@ def _coerce_strings(d: dict) -> dict:
 def _normalize(d: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if not isinstance(d, dict):
         return None
-
-    # Already correct wrapper
+    # already correct
     if "tool_name" in d and "arguments" in d:
         return {"tool_name": d["tool_name"], "arguments": d["arguments"]}
-
-    # Retell flat style {name, args/arguments}
+    # flat {name, args/arguments}
     if "name" in d and ("args" in d or "arguments" in d):
         args = d.get("arguments") or d.get("args") or {}
         tool = RETELL_NAME_TO_TOOL.get(d["name"], d["name"])
         return {"tool_name": tool, "arguments": args}
-
-    # >>> ADD THESE TWO INFERENCE BRANCHES <<<
-    # Args-only CONFIRM (Retell sometimes sends this)
-    if {"hold_id", "slot_id"} <= set(d.keys()):
-        return {"tool_name": "confirm_booking", "arguments": d}
-
-    # Args-only MANAGE (book/reschedule/cancel)
+    # args-only for manage_appointment (book/reschedule/cancel)
     if {"action_type", "caller_name"} <= set(d.keys()):
         return {"tool_name": "manage_appointment", "arguments": d}
-
-    # Deep search (keep as-is)
+    # args-only for confirm_booking
+    if {"hold_id", "slot_id"} <= set(d.keys()):
+        return {"tool_name": "confirm_booking", "arguments": d}
+    # deep search
     for v in d.values():
         if isinstance(v, dict):
             out = _normalize(v)
@@ -79,6 +73,7 @@ def _normalize(d: Dict[str, Any]) -> Optional[Dict[str, Any]]:
                     if out:
                         return out
     return None
+
 
 
 
@@ -171,6 +166,7 @@ async def retell_tools(
 @router.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
 
 
 
